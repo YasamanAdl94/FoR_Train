@@ -96,7 +96,7 @@ base_model = keras.applications.ResNet50(
 )
 
 # Freeze layers except the last few
-for layer in base_model.layers[:-7]:  # Unfreeze the last 5 layers for example
+for layer in base_model.layers[:-7]:  # Unfreeze the last 7 layers for example
     layer.trainable = False
 
 # Create your model on top of the base model
