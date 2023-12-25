@@ -96,7 +96,7 @@ base_model = keras.applications.ResNet50(
 )
 
 # Freeze layers except the last few
-for layer in base_model.layers[:-55]:  # Unfreeze the last 7 layers for example
+for layer in base_model.layers[:-30]:  # Unfreeze the last 7 layers for example
     layer.trainable = False
 
 # Create your model on top of the base model
@@ -107,8 +107,10 @@ model = keras.Sequential([
 #model.add(keras.layers.Dense(1, activation="sigmoid", kernel_regularizer=regularizers.l1(0.01)))
 #model.layers[0].trainable = True
 
+# Define the optimizer with a specific learning rate
+optimizer = keras.optimizers.Adam(learning_rate=0.0001)
 model.compile(
-    optimizer="adam",
+    optimizer=optimizer,
     loss="binary_crossentropy",
     metrics=[
         keras.metrics.BinaryAccuracy(),
@@ -176,7 +178,7 @@ tp, fp = results['true_positives'], results['false_positives']
 fn, tn = results['false_negatives'], results['true_negatives']
 cmx = np.array([[tp, fp], [fn, tn]], np.int32)
 
-model.save("W:/workdir/Models/model4.h5")
+model.save("W:/workdir/Models/model5.h5")
 
 cmx_plot = sns.heatmap(
     cmx / np.sum(cmx),
@@ -211,5 +213,5 @@ plt.ylabel('Accuracy')
 plt.legend()
 
 plt.tight_layout()
-plt.savefig("W:/workdir/Plots/plot4.png")
+plt.savefig("W:/workdir/Plots/plot5.png")
 plt.show()
