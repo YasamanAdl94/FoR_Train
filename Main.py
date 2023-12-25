@@ -26,7 +26,7 @@ test_count = len(list(test_dir.glob('*/*.png')))
 train_count = len(list(training_dir.glob('*/*.png')))
 validation_split = test_count / train_count
 # Define parameters and create datasets
-batch_size = 100
+batch_size = 50
 epochs = 20
 img_height = 224
 img_width = 224
@@ -96,7 +96,7 @@ base_model = keras.applications.ResNet50(
 )
 
 # Freeze layers except the last few
-for layer in base_model.layers[:-30]:  # Unfreeze the last 7 layers for example
+for layer in base_model.layers[:-35]:  # Unfreeze the last 7 layers for example
     layer.trainable = False
 
 # Create your model on top of the base model
@@ -178,7 +178,7 @@ tp, fp = results['true_positives'], results['false_positives']
 fn, tn = results['false_negatives'], results['true_negatives']
 cmx = np.array([[tp, fp], [fn, tn]], np.int32)
 
-model.save("W:/workdir/Models/model5.h5")
+model.save("W:/workdir/Models/model6.h5")
 
 cmx_plot = sns.heatmap(
     cmx / np.sum(cmx),
@@ -213,5 +213,5 @@ plt.ylabel('Accuracy')
 plt.legend()
 
 plt.tight_layout()
-plt.savefig("W:/workdir/Plots/plot5.png")
+plt.savefig("W:/workdir/Plots/plot6.png")
 plt.show()
