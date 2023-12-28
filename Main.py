@@ -26,8 +26,8 @@ test_count = len(list(test_dir.glob('*/*.png')))
 train_count = len(list(training_dir.glob('*/*.png')))
 validation_split = test_count / train_count
 # Define parameters and create datasets
-batch_size = 50
-epochs = 20
+batch_size = 100
+epochs = 100
 img_height = 224
 img_width = 224
 
@@ -90,15 +90,19 @@ print("\nNames of", str(len(class_names)), "classes:", class_names)
 
 # Build the model
 base_model = keras.applications.ResNet50(
-    include_top=False,
-    weights="imagenet",
+    include_top=True,
+    weights=None,
     pooling="avg"
 )
-
+print("number of layers:", len(base_model.layers))
+'''
 # Freeze layers except the last few
-for layer in base_model.layers[:-35]:  # Unfreeze the last 7 layers for example
+for layer in base_model.layers[:-30]:  # Unfreeze the last 7 layers for example
     layer.trainable = False
-
+'''
+for layer in base_model.layers:
+    # Unfreeze all layers for training from scratch
+    layer.trainable = True
 # Create your model on top of the base model
 model = keras.Sequential([
     base_model,
@@ -108,7 +112,7 @@ model = keras.Sequential([
 #model.layers[0].trainable = True
 
 # Define the optimizer with a specific learning rate
-optimizer = keras.optimizers.Adam(learning_rate=0.0001)
+optimizer = keras.optimizers.Adam(learning_rate=0.001)
 model.compile(
     optimizer=optimizer,
     loss="binary_crossentropy",
@@ -146,9 +150,11 @@ val_loss = history.history['val_loss']  # Validation loss
 val_accuracy = history.history['val_binary_accuracy']  # Validation accuracy
 
 # Print or use the values as needed
+print("----------------------------------------")
 print("Training Loss per epoch:", train_loss)
 print("Training Accuracy per epoch:", train_accuracy)
-
+print("Validation Loss per epoch:", val_loss)
+print("----------------------------------------")
 
 t1 = time.time()
 dt = (t1 - t0)
@@ -159,7 +165,7 @@ results = model.evaluate(
     return_dict=True
 )
 test_accuracy = results['binary_accuracy']
-print("test accuracy", test_accuracy )
+print("Test Accuracy", test_accuracy )
 
 def f1score(p, r):
     f1 = 2 / ((1 / p) + (1 / r))
@@ -178,7 +184,7 @@ tp, fp = results['true_positives'], results['false_positives']
 fn, tn = results['false_negatives'], results['true_negatives']
 cmx = np.array([[tp, fp], [fn, tn]], np.int32)
 
-model.save("W:/workdir/Models/model6.h5")
+model.save("W:/workdir/Models/model8.h5")
 
 cmx_plot = sns.heatmap(
     cmx / np.sum(cmx),
@@ -194,7 +200,7 @@ cmx_plot = sns.heatmap(
 cmx_plot.set(xlabel="Actual", ylabel="Predicted")
 
 
-plt.figure(figsize=(12, 4))
+plt.figure(figsize=(20, 10))
 
 # Plotting training loss
 plt.subplot(1, 2, 1)
@@ -213,5 +219,6 @@ plt.ylabel('Accuracy')
 plt.legend()
 
 plt.tight_layout()
-plt.savefig("W:/workdir/Plots/plot6.png")
+plt.title('Resnet50 all layers trained on FoR Dataset')
+plt.savefig("W:/workdir/Plots/plot8.png")
 plt.show()
