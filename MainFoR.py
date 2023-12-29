@@ -66,7 +66,7 @@ train_generator = train_datagen.flow_from_directory(
 )
 
 validation_ds = tf.keras.utils.image_dataset_from_directory(
-    training_ds,
+    training_dir,
     validation_split=validation_split,
     subset="validation",
     seed=123,
@@ -90,7 +90,8 @@ test_ds = tf.keras.utils.image_dataset_from_directory(
 
 class_names = training_ds.class_names
 print("\nNames of", str(len(class_names)), "classes:", class_names)
-
+class_names = train_generator.class_names
+print("\nNames of", str(len(class_names)), "classes:", class_names)
 
 # Build the model
 base_model = keras.applications.ResNet50(
