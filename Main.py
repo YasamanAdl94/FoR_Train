@@ -48,10 +48,10 @@ training_ds = tf.keras.utils.image_dataset_from_directory(
 
 def apply_audio_augmentation(image, label):
     # Apply time masking
-    spectrogram = tfio.audio.time_mask(image, param=10)  # Adjust 'param' as needed
+    spectrogram = tfio.audio.time_mask(image, param=15)  # Adjust 'param' as needed
 
     # Apply frequency masking
-    spectrogram = tfio.audio.freq_mask(image, param=5)  # Adjust 'param' as needed
+    spectrogram = tfio.audio.freq_mask(image, param=15)  # Adjust 'param' as needed
 
     return image, label
 
@@ -62,7 +62,7 @@ augmented_training_ds = training_ds.map(
 )
 
 validation_ds = tf.keras.utils.image_dataset_from_directory(
-    training_dir,
+    augmented_training_ds,
     validation_split=validation_split,
     subset="validation",
     seed=123,
@@ -91,7 +91,7 @@ print("\nNames of", str(len(class_names)), "classes:", class_names)
 # Build the model
 base_model = keras.applications.ResNet50(
     include_top=True,
-    weights=None,
+    weights="imagenet",
     pooling="avg"
 )
 print("number of layers:", len(base_model.layers))
@@ -100,9 +100,10 @@ print("number of layers:", len(base_model.layers))
 for layer in base_model.layers[:-30]:  # Unfreeze the last 7 layers for example
     layer.trainable = False
 '''
-for layer in base_model.layers:
+for layer in base_model.layers [:-7]:
     # Unfreeze all layers for training from scratch
-    layer.trainable = True
+    layer.trainable = False
+print(len(layer.trainable))
 # Create your model on top of the base model
 model = keras.Sequential([
     base_model,
@@ -112,7 +113,7 @@ model = keras.Sequential([
 #model.layers[0].trainable = True
 
 # Define the optimizer with a specific learning rate
-optimizer = keras.optimizers.Adam(learning_rate=0.001)
+optimizer = keras.optimizers.Adam(learning_rate=0.0001)
 model.compile(
     optimizer=optimizer,
     loss="binary_crossentropy",
@@ -166,40 +167,7 @@ results = model.evaluate(
 )
 test_accuracy = results['binary_accuracy']
 print("Test Accuracy", test_accuracy )
-
-def f1score(p, r):
-    epsilon = 1e-7  # A small value to avoid division by zero
-    f1 = 2 * p * r / (p + r + epsilon)
-    return f1
-
-print("-" * 70)
-print('\033[1m' + "Model metrics:" + '\033[0m')
-for i in results:
-    print(i + ": " + str(results[i]))
-print("-" * 70)
-print("F1 Score: " + str(f1score(results['precision'], results['recall'])))
-print("Time to train: ", dt)
-print("-" * 70)
-
-tp, fp = results['true_positives'], results['false_positives']
-fn, tn = results['false_negatives'], results['true_negatives']
-cmx = np.array([[tp, fp], [fn, tn]], np.int32)
-
 model.save("W:/workdir/Models/model8.h5")
-
-cmx_plot = sns.heatmap(
-    cmx / np.sum(cmx),
-    cmap='Blues',
-    annot=True,
-    fmt=".1%",
-    linewidth=5,
-    cbar=False,
-    square=True,
-    xticklabels=['Spoof (1)', 'Real (0)'],
-    yticklabels=['Spoof (1)', 'Real (0)']
-)
-cmx_plot.set(xlabel="Actual", ylabel="Predicted")
-
 
 plt.figure(figsize=(20, 10))
 
@@ -223,3 +191,46 @@ plt.tight_layout()
 plt.title('Resnet50 all layers trained on FoR Dataset')
 plt.savefig("W:/workdir/Plots/plot8.png")
 plt.show()
+
+
+def f1score(p, r):
+    epsilon = 1e-7  # A small value to avoid division by zero
+
+    # Handling potential division by zero cases
+    if p == 0 and r == 0:
+        return 0.0  # Return 0 when both precision and recall are zero
+    elif p + r == 0:
+        return 0.0  # Return 0 when the sum of precision and recall is zero
+    else:
+        f1 = 2 * p * r / (p + r + epsilon)
+        return f1
+
+print("-" * 70)
+print('\033[1m' + "Model metrics:" + '\033[0m')
+for i in results:
+    print(i + ": " + str(results[i]))
+print("-" * 70)
+print("F1 Score: " + str(f1score(results['precision'], results['recall'])))
+print("Time to train: ", dt)
+print("-" * 70)
+
+tp, fp = results['true_positives'], results['false_positives']
+fn, tn = results['false_negatives'], results['true_negatives']
+cmx = np.array([[tp, fp], [fn, tn]], np.int32)
+
+
+
+cmx_plot = sns.heatmap(
+    cmx / np.sum(cmx),
+    cmap='Blues',
+    annot=True,
+    fmt=".1%",
+    linewidth=5,
+    cbar=False,
+    square=True,
+    xticklabels=['Spoof (1)', 'Real (0)'],
+    yticklabels=['Spoof (1)', 'Real (0)']
+)
+cmx_plot.set(xlabel="Actual", ylabel="Predicted")
+
+
