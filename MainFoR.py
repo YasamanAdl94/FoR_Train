@@ -111,7 +111,7 @@ for layer in base_model.layers[:-20]:
 model = keras.Sequential([
     base_model,
     keras.layers.BatchNormalization(),
-    keras.layers.Dense(1, activation='relu', kernel_regularizer=regularizers.l2(0.01))
+    keras.layers.Dense(1, activation='sigmoid', kernel_regularizer=regularizers.l2(0.01))
 ])
 #model.add(keras.layers.Dense(1, activation="sigmoid", kernel_regularizer=regularizers.l1(0.01)))
 #model.layers[0].trainable = True
