@@ -26,7 +26,7 @@ test_count = len(list(test_dir.glob('*/*.png')))
 train_count = len(list(training_dir.glob('*/*.png')))
 validation_split = test_count / train_count
 # Define parameters and create datasets
-batch_size = 100
+batch_size = 50
 epochs = 100
 img_height = 224
 img_width = 224
@@ -90,8 +90,7 @@ test_ds = tf.keras.utils.image_dataset_from_directory(
 
 class_names = training_ds.class_names
 print("\nNames of", str(len(class_names)), "classes:", class_names)
-class_names = train_generator.class_names
-print("\nNames of", str(len(class_names)), "classes:", class_names)
+
 
 # Build the model
 base_model = keras.applications.ResNet50(
@@ -105,14 +104,14 @@ print("number of layers:", len(base_model.layers))
 for layer in base_model.layers[:-30]:  # Unfreeze the last 7 layers for example
     layer.trainable = False
 '''
-for layer in base_model.layers [:-7]:
+for layer in base_model.layers[:-20]:
     # Unfreeze all layers for training from scratch
     layer.trainable = False
-print(len(layer.trainable))
 # Create your model on top of the base model
 model = keras.Sequential([
     base_model,
-    keras.layers.Dense(1, activation='sigmoid')
+    keras.layers.BatchNormalization(),
+    keras.layers.Dense(1, activation='relu', kernel_regularizer=regularizers.l2(0.01))
 ])
 #model.add(keras.layers.Dense(1, activation="sigmoid", kernel_regularizer=regularizers.l1(0.01)))
 #model.layers[0].trainable = True
@@ -193,8 +192,8 @@ plt.ylabel('Accuracy')
 plt.legend()
 
 plt.tight_layout()
-plt.title('Resnet50 all layers trained on FoR Dataset')
-plt.savefig("W:/workdir/Plots/plot8.png")
+plt.suptitle('Resnet50 Trained on FoR Dataset with 20 frozen layers- ImageNet Weights', fontsize=16, y=1.02)
+plt.savefig("W:/workdir/Plots/plot_FoR1.png")
 plt.show()
 
 
