@@ -148,7 +148,7 @@ model = keras.Sequential([
 #model.layers[0].trainable = True
 
 # Define the optimizer with a specific learning rate
-optimizer = keras.optimizers.Adam(learning_rate=0.001)
+optimizer = keras.optimizers.Adam(learning_rate=0.01)
 model.compile(
     optimizer=optimizer,
     loss="binary_crossentropy",
@@ -205,7 +205,7 @@ test_accuracy = results['binary_accuracy']
 print("Test Accuracy", test_accuracy )
 model.save("W:/workdir/Models/model_FoR2.h5")
 
-plt.figure(figsize=(20, 10))
+plt.figure(figsize=(12, 6))
 
 # Plotting training loss
 plt.subplot(1, 2, 1)
@@ -217,14 +217,15 @@ plt.legend()
 
 # Plotting training accuracy
 plt.subplot(1, 2, 2)
-plt.plot(train_accuracy, label='Training Accuracy')
-plt.plot(val_accuracy, label='Validation Accuracy')
+plt.plot(train_accuracy, 'g', label='Training Accuracy')
+plt.plot(val_accuracy, 'r', label='Validation Accuracy')
 plt.xlabel('Epochs')
 plt.ylabel('Accuracy')
 plt.legend()
 
 plt.tight_layout()
-plt.suptitle('Resnet50 Trained on FoR Dataset with 20 frozen layers- ImageNet Weights and 3 fold', fontsize=16, y=1.02)
+plt.suptitle('Resnet50 Trained on FoR Dataset - ImageNet Weights and 3 fold', fontsize=14, y=0.98)  # Adjusted title
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjusted spacing for the title
 plt.savefig("W:/workdir/Plots/plot_FoR2.png")
 plt.show()
 
