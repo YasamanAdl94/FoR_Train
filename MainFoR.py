@@ -160,6 +160,7 @@ model.compile(
         keras.metrics.FalsePositives(),
         keras.metrics.TrueNegatives(),
         keras.metrics.FalseNegatives(),
+        'val_binary_accuracy'
     ]
 )
 
@@ -278,5 +279,7 @@ cmx_plot = sns.heatmap(
     yticklabels=['Spoof (1)', 'Real (0)']
 )
 cmx_plot.set(xlabel="Actual", ylabel="Predicted")
+cmx_plot.set_title('FoR')
+
 
 
