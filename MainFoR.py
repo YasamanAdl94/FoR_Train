@@ -15,7 +15,7 @@ from tensorflow.keras import regularizers
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import tensorflow_io as tfio  # Import tensorflow-io for signal processing
 from sklearn.model_selection import KFold
-
+import pandas as pd
 
 
 
@@ -57,44 +57,56 @@ np.random.shuffle(all_image_paths)
 # Split the data using KFold
 kf = KFold(n_splits=num_folds, shuffle=True, random_state=123)
 
+train_datagen = ImageDataGenerator(
+    rescale=1. / 255,
+    rotation_range=10,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    shear_range=0.1,
+    zoom_range=0.1,
+    horizontal_flip=False,
+    fill_mode='nearest'  # You can explore more options in the documentation
+)
+
 for fold, (train_index, val_index) in enumerate(kf.split(all_image_paths)):
     train_files = np.array(all_image_paths)[train_index]
     val_files = np.array(all_image_paths)[val_index]
 
-    train_datagen = ImageDataGenerator(
-        rescale=1. / 255,
-        rotation_range=20,
-        width_shift_range=0.2,
-        height_shift_range=0.2,
-        shear_range=0.2,
-        zoom_range=0.2,
-        horizontal_flip=True,
-        fill_mode='nearest'  # You can explore more options in the documentation
-    )
-    train_ds = train_datagen.flow_from_directory(
-        training_dir,
+
+
+    # Creating DataFrames with file paths and labels (using class names as labels)
+    train_df = pd.DataFrame({
+        "filepaths": [str(filepath) for filepath in train_files],  # Convert file paths to strings
+        "labels": [str(filepath.parent.name) for filepath in train_files]  # Assuming class names are parent directory names
+    })
+
+    val_df = pd.DataFrame({
+        "filepaths": [str(filepath) for filepath in val_files],  # Convert file paths to strings
+        "labels": [str(filepath.parent.name) for filepath in val_files]  # Assuming class names are parent directory names
+    })
+
+    # Create generators for training and validation data using flow_from_dataframe
+    train_ds = train_datagen.flow_from_dataframe(
+        train_df,
+        x_col="filepaths",
+        y_col="labels",
         target_size=(img_height, img_width),
         batch_size=batch_size,
         class_mode='binary',
         shuffle=True,
-        seed=123,
-        subset='training',
-        classes=['fake', 'real'],
-        file_paths=train_files
+        seed=123
     )
 
-    val_ds = train_datagen.flow_from_directory(
-        training_dir,
+    val_ds = train_datagen.flow_from_dataframe(
+        val_df,
+        x_col="filepaths",
+        y_col="labels",
         target_size=(img_height, img_width),
         batch_size=batch_size,
         class_mode='binary',
         shuffle=False,
-        seed=123,
-        subset='validation',
-        classes=['fake', 'real'],
-        file_paths=val_files
+        seed=123
     )
-
 print("\n\033[1mCreating test dataset:\033[0m")
 test_ds = tf.keras.utils.image_dataset_from_directory(
     test_dir,
@@ -106,13 +118,14 @@ test_ds = tf.keras.utils.image_dataset_from_directory(
     class_names=['fake', 'real']
 )
 
-class_names = train_ds.class_names
+# Define your class names explicitly
+class_names = ['fake', 'real']
 print("\nNames of", str(len(class_names)), "classes:", class_names)
 
 
 # Build the model
 base_model = keras.applications.ResNet50(
-    include_top=True,
+    include_top=False,
     weights="imagenet",
     pooling="avg"
 )
@@ -122,9 +135,9 @@ print("number of layers:", len(base_model.layers))
 for layer in base_model.layers[:-30]:  # Unfreeze the last 7 layers for example
     layer.trainable = False
 '''
-for layer in base_model.layers[:-15]:
+for layer in base_model.layers[:-100]:
     # Unfreeze all layers for training from scratch
-    layer.trainable = False
+    layer.trainable = True
 # Create your model on top of the base model
 model = keras.Sequential([
     base_model,
@@ -196,8 +209,8 @@ plt.figure(figsize=(20, 10))
 
 # Plotting training loss
 plt.subplot(1, 2, 1)
-plt.plot(train_loss, label='Training Loss')
-plt.plot(val_loss, label='Validation Loss')
+plt.plot(train_loss, 'g', label='Training Loss')
+plt.plot(val_loss, 'r', label='Validation Loss')
 plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend()
