@@ -14,6 +14,7 @@ from tensorflow import keras
 from tensorflow.keras import regularizers
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import tensorflow_io as tfio  # Import tensorflow-io for signal processing
+from sklearn.model_selection import KFold
 
 
 
@@ -24,15 +25,16 @@ test_dir = pathlib.Path("W:\\workdir\\test")
 
 test_count = len(list(test_dir.glob('*/*.png')))
 train_count = len(list(training_dir.glob('*/*.png')))
-validation_split = test_count / train_count
+#validation_split = test_count / train_count
 # Define parameters and create datasets
-batch_size = 50
+batch_size = 100
 epochs = 100
 img_height = 224
 img_width = 224
 
 
 print("\033[1mCreating training and validation datasets:\033[0m")
+'''
 training_ds = tf.keras.utils.image_dataset_from_directory(
     training_dir,
     validation_split=validation_split,
@@ -44,38 +46,54 @@ training_ds = tf.keras.utils.image_dataset_from_directory(
     label_mode='binary',
     class_names=['fake', 'real']
 )
+'''
+# Define the number of folds for cross-validation
+num_folds = 3
 
+# Get file paths for all images in the training directory
+all_image_paths = list(training_dir.glob('*/*.png'))
+np.random.shuffle(all_image_paths)
 
-train_datagen = ImageDataGenerator(
-    rescale=1./255,
-    rotation_range=20,
-    width_shift_range=0.2,
-    height_shift_range=0.2,
-    shear_range=0.2,
-    zoom_range=0.2,
-    horizontal_flip=True,
-    fill_mode='nearest'  # You can explore more options in the documentation
-)
-train_generator = train_datagen.flow_from_directory(
-    training_dir,
-    target_size=(img_height, img_width),
-    batch_size=batch_size,
-    class_mode='binary',
-    shuffle=True,
-    seed=123
-)
+# Split the data using KFold
+kf = KFold(n_splits=num_folds, shuffle=True, random_state=123)
 
-validation_ds = tf.keras.utils.image_dataset_from_directory(
-    training_dir,
-    validation_split=validation_split,
-    subset="validation",
-    seed=123,
-    image_size=(img_height, img_width),
-    batch_size=batch_size,
-    crop_to_aspect_ratio=True,
-    label_mode='binary',
-    class_names=['fake', 'real']
-)
+for fold, (train_index, val_index) in enumerate(kf.split(all_image_paths)):
+    train_files = np.array(all_image_paths)[train_index]
+    val_files = np.array(all_image_paths)[val_index]
+
+    train_datagen = ImageDataGenerator(
+        rescale=1. / 255,
+        rotation_range=20,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True,
+        fill_mode='nearest'  # You can explore more options in the documentation
+    )
+    train_ds = train_datagen.flow_from_directory(
+        training_dir,
+        target_size=(img_height, img_width),
+        batch_size=batch_size,
+        class_mode='binary',
+        shuffle=True,
+        seed=123,
+        subset='training',
+        classes=['fake', 'real'],
+        file_paths=train_files
+    )
+
+    val_ds = train_datagen.flow_from_directory(
+        training_dir,
+        target_size=(img_height, img_width),
+        batch_size=batch_size,
+        class_mode='binary',
+        shuffle=False,
+        seed=123,
+        subset='validation',
+        classes=['fake', 'real'],
+        file_paths=val_files
+    )
 
 print("\n\033[1mCreating test dataset:\033[0m")
 test_ds = tf.keras.utils.image_dataset_from_directory(
@@ -88,7 +106,7 @@ test_ds = tf.keras.utils.image_dataset_from_directory(
     class_names=['fake', 'real']
 )
 
-class_names = training_ds.class_names
+class_names = train_ds.class_names
 print("\nNames of", str(len(class_names)), "classes:", class_names)
 
 
@@ -104,7 +122,7 @@ print("number of layers:", len(base_model.layers))
 for layer in base_model.layers[:-30]:  # Unfreeze the last 7 layers for example
     layer.trainable = False
 '''
-for layer in base_model.layers[:-20]:
+for layer in base_model.layers[:-15]:
     # Unfreeze all layers for training from scratch
     layer.trainable = False
 # Create your model on top of the base model
@@ -117,7 +135,7 @@ model = keras.Sequential([
 #model.layers[0].trainable = True
 
 # Define the optimizer with a specific learning rate
-optimizer = keras.optimizers.Adam(learning_rate=0.0001)
+optimizer = keras.optimizers.Adam(learning_rate=0.001)
 model.compile(
     optimizer=optimizer,
     loss="binary_crossentropy",
@@ -135,16 +153,17 @@ model.compile(
 model.summary()
 
 # Model training
-steps_per_epoch = len(training_ds) / epochs
+steps_per_epoch = len(train_ds) / epochs
+validation_steps = len(val_ds) // batch_size
 
 t0 = time.time()
 
 # Model training
 history = model.fit(
-    train_generator,
+    train_ds,
     steps_per_epoch=steps_per_epoch,
-    validation_data=validation_ds,
-    validation_steps=1,
+    validation_data=val_ds,
+    validation_steps=validation_steps,
     epochs=epochs
 )
 
@@ -171,7 +190,7 @@ results = model.evaluate(
 )
 test_accuracy = results['binary_accuracy']
 print("Test Accuracy", test_accuracy )
-model.save("W:/workdir/Models/model8.h5")
+model.save("W:/workdir/Models/model_FoR2.h5")
 
 plt.figure(figsize=(20, 10))
 
@@ -192,8 +211,8 @@ plt.ylabel('Accuracy')
 plt.legend()
 
 plt.tight_layout()
-plt.suptitle('Resnet50 Trained on FoR Dataset with 20 frozen layers- ImageNet Weights', fontsize=16, y=1.02)
-plt.savefig("W:/workdir/Plots/plot_FoR1.png")
+plt.suptitle('Resnet50 Trained on FoR Dataset with 20 frozen layers- ImageNet Weights and 3 fold', fontsize=16, y=1.02)
+plt.savefig("W:/workdir/Plots/plot_FoR2.png")
 plt.show()
 
 
