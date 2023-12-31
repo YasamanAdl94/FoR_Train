@@ -160,7 +160,6 @@ model.compile(
         keras.metrics.FalsePositives(),
         keras.metrics.TrueNegatives(),
         keras.metrics.FalseNegatives(),
-        'val_binary_accuracy'
     ]
 )
 
