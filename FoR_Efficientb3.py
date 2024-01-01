@@ -36,7 +36,7 @@ img_height = 224
 img_width = 224
 
 
-print("\033[1mCreating training and validation datasets:\033[0m")
+print("\033[1mCreating training datasets:\033[0m")
 
 train_datagen = ImageDataGenerator(
     rescale=1. / 255,
@@ -51,7 +51,6 @@ train_datagen = ImageDataGenerator(
 training_ds = tf.keras.utils.image_dataset_from_directory(
     training_dir,
     validation_split=None,
-    subset="training",
     seed=123,
     image_size=(img_height, img_width),
     batch_size=batch_size,

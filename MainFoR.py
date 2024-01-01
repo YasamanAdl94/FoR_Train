@@ -17,6 +17,8 @@ import tensorflow_io as tfio  # Import tensorflow-io for signal processing
 from sklearn.model_selection import KFold
 import pandas as pd
 from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.models import Model
 
 
 
@@ -35,8 +37,9 @@ epochs = 100
 img_height = 224
 img_width = 224
 
+input_shape = (img_height, img_width, 3)
 
-print("\033[1mCreating training and validation datasets:\033[0m")
+print("\033[1mCreating training dataset:\033[0m")
 
 train_datagen = ImageDataGenerator(
     rescale=1. / 255,
@@ -51,7 +54,6 @@ train_datagen = ImageDataGenerator(
 training_ds = tf.keras.utils.image_dataset_from_directory(
     training_dir,
     validation_split=None,
-    subset="training",
     seed=123,
     image_size=(img_height, img_width),
     batch_size=batch_size,
@@ -67,68 +69,7 @@ train_generator = train_datagen.flow_from_directory(
     shuffle=True,
     seed=123
 )
-'''
-# Define the number of folds for cross-validation
-num_folds = 3
 
-# Get file paths for all images in the training directory
-all_image_paths = list(training_dir.glob('*/*.png'))
-np.random.shuffle(all_image_paths)
-
-# Split the data using KFold
-kf = KFold(n_splits=num_folds, shuffle=True, random_state=123)
-
-train_datagen = ImageDataGenerator(
-    rescale=1. / 255,
-    rotation_range=5,
-    width_shift_range=0.1,
-    height_shift_range=0.1,
-    shear_range=0.1,
-    zoom_range=0.1,
-    horizontal_flip=False,
-    fill_mode='nearest'  # You can explore more options in the documentation
-)
-
-for fold, (train_index, val_index) in enumerate(kf.split(all_image_paths)):
-    train_files = np.array(all_image_paths)[train_index]
-    val_files = np.array(all_image_paths)[val_index]
-
-
-
-    # Creating DataFrames with file paths and labels (using class names as labels)
-    train_df = pd.DataFrame({
-        "filepaths": [str(filepath) for filepath in train_files],  # Convert file paths to strings
-        "labels": [str(filepath.parent.name) for filepath in train_files]  # Assuming class names are parent directory names
-    })
-
-    val_df = pd.DataFrame({
-        "filepaths": [str(filepath) for filepath in val_files],  # Convert file paths to strings
-        "labels": [str(filepath.parent.name) for filepath in val_files]  # Assuming class names are parent directory names
-    })
-
-    # Create generators for training and validation data using flow_from_dataframe
-    train_ds = train_datagen.flow_from_dataframe(
-        train_df,
-        x_col="filepaths",
-        y_col="labels",
-        target_size=(img_height, img_width),
-        batch_size=batch_size,
-        class_mode='binary',
-        shuffle=True,
-        seed=123
-    )
-
-    val_ds = train_datagen.flow_from_dataframe(
-        val_df,
-        x_col="filepaths",
-        y_col="labels",
-        target_size=(img_height, img_width),
-        batch_size=batch_size,
-        class_mode='binary',
-        shuffle=False,
-        seed=123
-    )
-'''
 print("\n\033[1mCreating val dataset:\033[0m")
 val_ds = tf.keras.utils.image_dataset_from_directory(
     val_dir,
@@ -155,30 +96,22 @@ test_ds = tf.keras.utils.image_dataset_from_directory(
 class_names = training_ds.class_names
 print("\nNames of", str(len(class_names)), "classes:", class_names)
 
+model_input = Input(shape=input_shape)
+x = Conv2D(32, kernel_size=(3, 3), activation='relu')(model_input)
+x = MaxPooling2D(pool_size=(2, 2))(x)
+x = Conv2D(64, kernel_size=(3, 3), activation='relu')(x)
+x = MaxPooling2D(pool_size=(2, 2))(x)
+x = Flatten()(x)
 
-# Build the model
-base_model = keras.applications.ResNet50(
-    include_top=False,
-    weights="imagenet",
-    pooling="avg"
-)
-print("number of layers:", len(base_model.layers))
-'''
-# Freeze layers except the last few
-for layer in base_model.layers[:-30]:  # Unfreeze the last 7 layers for example
-    layer.trainable = False
-'''
-for layer in base_model.layers[:70]:
-    # Unfreeze all layers for training from scratch
-    layer.trainable = False
+# Add Dense layers with Dropout for regularization
+x = Dense(128, activation='relu')(x)
+x = Dropout(0.5)(x)
+model_output = Dense(1, activation='sigmoid')(x)  # Output layer with a single neuron for binary classification
 
-#base_model.trainable = True
-# Create your model on top of the base model
-model = keras.Sequential([
-    base_model,
-    keras.layers.BatchNormalization(),
-    keras.layers.Dense(1, activation='sigmoid', kernel_regularizer=regularizers.l1(0.01))
-])
+model = Model(inputs=model_input, outputs=model_output)
+
+
+
 #model.add(keras.layers.Dense(1, activation="sigmoid", kernel_regularizer=regularizers.l1(0.01)))
 #model.layers[0].trainable = True
 
@@ -206,7 +139,7 @@ validation_steps = len(val_ds) // batch_size
 
 t0 = time.time()
 
-checkpoint_path = "W:/workdir/FoR_Models/best_model1.h5"
+checkpoint_path = "W:/workdir/FoR_Models/best_model2.h5"
 checkpoint = ModelCheckpoint(checkpoint_path,
                              monitor='val_binary_accuracy',
                              verbose=1,
@@ -238,8 +171,9 @@ print("----------------------------------------")
 t1 = time.time()
 dt = (t1 - t0)
 
+best_model = tf.keras.models.load_model(checkpoint_path)
 # Model evaluation
-results = model.evaluate(
+results = best_model.evaluate(
     test_ds,
     return_dict=True
 )
@@ -268,9 +202,15 @@ plt.ylabel('Accuracy')
 plt.legend()
 
 
-plt.suptitle('Resnet50 Trained on FoR Dataset - ImageNet Weights and 70 first layers frozen', fontsize=14, y=0.98)  # Adjusted title
+plot_title = 'Basic CNN Trained on FoR Dataset'  # Your desired plot title
+
+plt.suptitle(plot_title, fontsize=14, y=0.98)  # Adjusted title
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjusted spacing for the title
-plt.savefig("W:/workdir/Plots/plot_FoR2.png")
+
+# Generating the filename based on the plot title
+plot_filename = f"W:/workdir/Plots/{plot_title.replace(' ', '_')}.png"
+
+plt.savefig(plot_filename)
 plt.show()
 
 
