@@ -3,9 +3,10 @@ import librosa
 import numpy as np
 import matplotlib.pyplot as plt
 
-input_folder = "W:\\for-norm\\for-norm\\training\\real"
-output_folder = "W:\workdir\\train\\real"
-
+input_folder = "W:\\for-norm\\for-norm\\validation\\real"
+output_folder = "W:\workdir\\dev\\real"
+#input_folder = "W:\\for-norm\\for-norm\\validation\\fake"
+#output_folder = "W:\workdir\\dev\\fake"
 
 def pad(x, max_len=48000):
     x_len = x.shape[0]
@@ -28,6 +29,7 @@ sr = 16000
 
 
 def save_mel_spectrogram(input_file, output_file):
+    print(f"Processing file: {input_file}")
     try:
         signal, _ = librosa.load(input_file)
 
