@@ -17,12 +17,12 @@ import tensorflow_io as tfio  # Import tensorflow-io for signal processing
 from sklearn.model_selection import KFold
 import pandas as pd
 from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.applications import EfficientNetB3
 
 
-
-training_dir = pathlib.Path("W:\\workdir\\CQT\\train")
-val_dir = pathlib.Path("W:\\workdir\\CQT\\dev")
-test_dir = pathlib.Path("W:\\workdir\\CQT\\test")
+training_dir = pathlib.Path("W:\\workdir\\train")
+val_dir = pathlib.Path("W:\\workdir\\dev")
+test_dir = pathlib.Path("W:\\workdir\\test")
 
 train_count = len(list(training_dir.glob('*/*.png')))
 val_count = len(list(val_dir.glob('*/*.png')))
@@ -157,7 +157,7 @@ print("\nNames of", str(len(class_names)), "classes:", class_names)
 
 
 # Build the model
-base_model = keras.applications.ResNet50(
+base_model = EfficientNetB3(
     include_top=False,
     weights="imagenet",
     pooling="avg"
@@ -268,9 +268,9 @@ plt.ylabel('Accuracy')
 plt.legend()
 
 
-plt.suptitle('Resnet50 Trained on FoR Dataset - ImageNet Weights and 70 first layers frozen', fontsize=14, y=0.98)  # Adjusted title
+plt.suptitle('Efficientnetb3 Trained on FoR Dataset - ImageNet Weights and 70 first layers frozen', fontsize=14, y=0.98)  # Adjusted title
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjusted spacing for the title
-plt.savefig("W:/workdir/Plots/plot_FoR2.png")
+plt.savefig("W:/workdir/Plots/plot_FoR_Efficientb3.png")
 plt.show()
 
 

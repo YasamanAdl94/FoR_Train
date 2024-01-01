@@ -3,8 +3,8 @@ import librosa
 import numpy as np
 import matplotlib.pyplot as plt
 
-input_folder = "W:\\for-norm\\for-norm\\validation\\real"
-output_folder = "W:\workdir\\CQT\\dev\\real"
+input_folder = "W:\\for-norm\\for-norm\\training\\real"
+output_folder = "W:\workdir\\CQT\\train\\real"
 #input_folder = "W:\\for-norm\\for-norm\\validation\\fake"
 #output_folder = "W:\workdir\\CQT\\dev\\fake"
 

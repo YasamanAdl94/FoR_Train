@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 
 #input_folder = "W:\\for-norm\\for-norm\\validation\\real"
 #output_folder = "W:\workdir\\CQT\\dev\\real"
-input_folder = "W:\\for-norm\\for-norm\\validation\\fake"
-output_folder = "W:\workdir\\CQT\\dev\\fake"
+input_folder = "W:\\for-norm\\for-norm\\training\\fake"
+output_folder = "W:\workdir\\CQT\\train\\fake"
 
 def pad(x, max_len=48000):
     x_len = x.shape[0]
